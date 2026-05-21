@@ -25,19 +25,21 @@ export default function ChildPage({ user }) {
   const unitProg = displayUnit ? (progress?.[user.id]?.[displayUnit.id] ?? {}) : {}
   const pct = displayUnit ? Math.round(stepsDone(progress, user.id, displayUnit.id) / STEPS.length * 100) : 0
 
-  function handleStepClick(step, idx) {
+  function handleStepClick(step) {
     if (!displayUnit) return
     const st = getStep(progress, user.id, displayUnit.id, step.key)
-    if (st.status === 'approved') return // 이미 완료
+    if (st.status === 'approved') return
 
-    const prevDone = idx === 0 || isStepDone(progress, user.id, displayUnit.id, STEPS[idx - 1].key)
-    if (!prevDone) { showToast('이전 단계를 먼저 완료하세요'); return }
+    if (st.status === 'pending') {
+      // 요청 취소
+      setStepStatus(user.id, displayUnit.id, step.key, 'idle', '', user.name, 'child')
+      showToast('완료 요청을 취소했어요')
+      return
+    }
 
-    if (st.status === 'pending') { showToast('이미 완료 요청 중이에요. 부모 승인을 기다리세요'); return }
-
+    // idle / rejected → 완료 요청
     setStepStatus(user.id, displayUnit.id, step.key, 'pending', '', user.name, 'child')
     showToast('완료 요청을 보냈어요!')
-    markNotificationsRead(user.id) // 아이 입장 알림 읽음 처리는 직접 하지 않음
   }
 
   // 현재 단원의 모든 피드백을 합쳐서 표시 (stepKey 구분 없이 general 피드백)
@@ -57,14 +59,13 @@ export default function ChildPage({ user }) {
     addFeedback(user.id, displayUnit.id, activeStep.key, text, user.name, 'child')
   }
 
-  function getStepRowClass(step, idx) {
+  function getStepRowClass(step) {
     if (!displayUnit) return ''
     const st = getStep(progress, user.id, displayUnit.id, step.key)
     if (st.status === 'approved') return 'done'
     if (st.status === 'pending') return 'pending'
     if (st.status === 'rejected') return 'rejected'
-    const prevDone = idx === 0 || isStepDone(progress, user.id, displayUnit.id, STEPS[idx - 1].key)
-    return prevDone ? 'active' : ''
+    return 'active'
   }
 
   function getStepIcon(step) {
@@ -131,16 +132,19 @@ export default function ChildPage({ user }) {
         <div className="cycle-wrap">
           {displayUnit
             ? STEPS.map((step, idx) => {
-                const rowClass = getStepRowClass(step, idx)
+                const rowClass = getStepRowClass(step)
                 const st = getStep(progress, user.id, displayUnit.id, step.key)
                 return (
                   <div key={step.key} className={`step-row${rowClass ? ` ${rowClass}` : ''}`}>
-                    <div className="step-chk" onClick={() => handleStepClick(step, idx)}>
+                    <div className="step-chk" onClick={() => handleStepClick(step)}>
                       {getStepIcon(step)}
                     </div>
                     <div className="step-lbl">{idx + 1}. {step.label}</div>
                     <div className="step-pts">
-                      {st.status === 'pending' ? '⏳' : st.status === 'rejected' ? '반려됨' : `+${step.pts}P`}
+                      {st.status === 'approved'  && <span style={{ color: 'var(--cok)' }}>+{step.pts}P</span>}
+                      {st.status === 'pending'   && <span style={{ color: 'var(--cw)', fontSize: 11 }}>취소하려면 클릭</span>}
+                      {st.status === 'rejected'  && <span style={{ color: 'var(--ce)', fontSize: 11 }}>반려 · 재요청 클릭</span>}
+                      {st.status === 'idle'      && <span>+{step.pts}P</span>}
                     </div>
                   </div>
                 )

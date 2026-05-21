@@ -14,8 +14,8 @@ export function avatarBg(color) { return AV_BG[color] || '#F1EFE8' }
 function defaultState() {
   return {
     members: [
-      { id: 'mom', name: '엄마',  role: 'parent', color: '#2D6BE4' },
-      { id: 'dad', name: '아빠',  role: 'parent', color: '#6C4FD4' },
+      { id: 'mom', name: '엄마',  role: 'parent', color: '#2D6BE4', password: '1234' },
+      { id: 'dad', name: '아빠',  role: 'parent', color: '#6C4FD4', password: '1234' },
       { id: 'c1',  name: '첫째',  role: 'child',  color: '#2E9B6E', grade: '초5-1' },
       { id: 'c2',  name: '둘째',  role: 'child',  color: '#C97B0A', grade: '초3-1' },
     ],
@@ -109,6 +109,18 @@ const useStore = create(
           const notifications = [...s.notifications]
           const unit = s.units.find(u => u.id === unitId)
           const stepLabel = STEPS.find(st => st.key === stepKey)?.label ?? stepKey
+
+          if (status === 'idle') {
+            // 아이가 요청 취소 → 해당 단계의 부모 pending 알림을 읽음 처리
+            return {
+              progress,
+              notifications: s.notifications.map(n =>
+                n.childId === childId && n.unitId === unitId && n.stepKey === stepKey && n.type === 'pending'
+                  ? { ...n, read: true }
+                  : n
+              ),
+            }
+          }
 
           if (status === 'pending') {
             // 아이 → 부모 알림

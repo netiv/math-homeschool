@@ -49,6 +49,7 @@ const COLORS = [
 
 export function MemberModal({ member, role, onSave, onClose }) {
   const nameRef = useRef()
+  const pwRef = useRef()
   const [color, setColor] = useState(member?.color ?? '#2E9B6E')
   const [grade, setGrade] = useState(member?.grade ?? '초3-1')
   const isChild = role === 'child'
@@ -58,7 +59,10 @@ export function MemberModal({ member, role, onSave, onClose }) {
   function handleSave() {
     const name = nameRef.current.value.trim()
     if (!name) { nameRef.current.focus(); return }
-    onSave({ name, color, grade: isChild ? grade : undefined })
+    const extra = isChild
+      ? { grade }
+      : { password: pwRef.current.value || member?.password || '' }
+    onSave({ name, color, ...extra })
   }
 
   return (
@@ -71,6 +75,17 @@ export function MemberModal({ member, role, onSave, onClose }) {
           <>
             <label>학년/학기</label>
             <GradeSelect value={grade} onChange={setGrade} />
+          </>
+        )}
+        {!isChild && (
+          <>
+            <label>비밀번호 {member ? '(변경 시에만 입력)' : ''}</label>
+            <input
+              ref={pwRef}
+              type="password"
+              defaultValue=""
+              placeholder={member?.password ? '새 비밀번호 (비우면 유지)' : '비밀번호 설정'}
+            />
           </>
         )}
         <label>색상</label>

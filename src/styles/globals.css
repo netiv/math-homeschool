@@ -76,6 +76,7 @@ body {
   cursor: pointer; text-align: center; transition: border-color .15s, background .15s;
 }
 .mc:hover { border-color: var(--cp); background: var(--cpl); }
+.mc-selected { border-color: var(--cp) !important; background: var(--cpl) !important; box-shadow: 0 0 0 2px var(--cpl); }
 
 /* ── Card ── */
 .card {
